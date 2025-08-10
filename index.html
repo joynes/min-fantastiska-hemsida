@@ -3,9 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Min Fantastiska Hemsida</title>
+    <title>3D Dice Roll</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Min Fantastiska Hemsida</h1>
+    <div id="ui-container">
+        <div id="message">Tap to roll</div>
+        <div id="result"></div>
+        <div id="history-container">
+            <h2>History</h2>
+            <ul id="history-list"></ul>
+        </div>
+    </div>
+    <canvas id="bg"></canvas>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/KLA6/cannon-es-umd@v0.20.0/cannon-es.umd.js"></script>
+    <script src="main.js"></script>
 </body>
 </html>
