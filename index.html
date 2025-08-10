@@ -4,22 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3D Dice Roll</title>
+    <script src="//cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="ui-container">
-        <div id="message">Tap to roll</div>
-        <div id="result"></div>
-        <div id="history-container">
-            <h2>History</h2>
-            <ul id="history-list"></ul>
-        </div>
-    </div>
     <canvas id="bg"></canvas>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/KLA6/cannon-es-umd@v0.20.0/cannon-es.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lil-gui@0.19"></script>
     <script src="main.js"></script>
-    <script src="//cdn.jsdelivr.net/npm/eruda"></script>
-    <script>eruda.init();</script>
+    
 </body>
 </html>

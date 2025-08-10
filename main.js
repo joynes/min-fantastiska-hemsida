@@ -16,25 +16,48 @@ scene.add(directionalLight);
 const world = new CANNON.World();
 world.gravity.set(0, -9.82, 0);
 
-// Materials
+// --- Parameters and GUI ---
+const params = {
+    textureSize: 8,
+    color1: '#444444',
+    color2: '#888888',
+    rotationSpeed: 1,
+    rollResult: 'N/A',
+    roll: () => rollDice(),
+};
+
+const gui = new lil.GUI();
+
+// --- Ground ---
+function createCheckerboardTexture(size, color1, color2) {
+    const canvas = document.createElement('canvas');
+    const divisions = size;
+    canvas.width = 256;
+    canvas.height = 256;
+    const context = canvas.getContext('2d');
+    const squareSize = canvas.width / divisions;
+    for (let x = 0; x < divisions; x++) {
+        for (let y = 0; y < divisions; y++) {
+            context.fillStyle = (x + y) % 2 === 0 ? color1 : color2;
+            context.fillRect(x * squareSize, y * squareSize, squareSize, squareSize);
+        }
+    }
+    return new THREE.CanvasTexture(canvas);
+}
+
+let groundTexture = createCheckerboardTexture(params.textureSize, params.color1, params.color2);
+groundTexture.wrapS = THREE.RepeatWrapping;
+groundTexture.wrapT = THREE.RepeatWrapping;
+groundTexture.repeat.set(50, 50);
+
 const groundMaterial = new CANNON.Material('groundMaterial');
-const dieMaterial = new CANNON.Material('dieMaterial');
-const wallMaterial = new CANNON.Material('wallMaterial');
+const groundMesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(100, 100),
+    new THREE.MeshStandardMaterial({ map: groundTexture, metalness: 0.2, roughness: 0.5 })
+);
+groundMesh.rotation.x = -Math.PI / 2;
+scene.add(groundMesh);
 
-// Contact Materials
-const groundDieContactMaterial = new CANNON.ContactMaterial(groundMaterial, dieMaterial, {
-    friction: 0.1,
-    restitution: 0.5
-});
-world.addContactMaterial(groundDieContactMaterial);
-
-const dieWallContactMaterial = new CANNON.ContactMaterial(dieMaterial, wallMaterial, {
-    friction: 0.01,
-    restitution: 0.8
-});
-world.addContactMaterial(dieWallContactMaterial);
-
-// Ground
 const groundBody = new CANNON.Body({
     mass: 0,
     shape: new CANNON.Plane(),
@@ -43,14 +66,8 @@ const groundBody = new CANNON.Body({
 groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
 world.addBody(groundBody);
 
-const groundMesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(100, 100),
-    new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 0.2, roughness: 0.5 })
-);
-groundMesh.rotation.x = -Math.PI / 2;
-scene.add(groundMesh);
-
-// Walls
+// --- Walls ---
+const wallMaterial = new CANNON.Material('wallMaterial');
 function createWall(position, quaternion) {
     const wallBody = new CANNON.Body({
         mass: 0,
@@ -61,12 +78,13 @@ function createWall(position, quaternion) {
     });
     world.addBody(wallBody);
 }
-createWall(new CANNON.Vec3(0, 0, -5), new CANNON.Quaternion().setFromEuler(0, 0, 0)); // Back
-createWall(new CANNON.Vec3(0, 0, 5), new CANNON.Quaternion().setFromEuler(0, Math.PI, 0)); // Front
-createWall(new CANNON.Vec3(-5, 0, 0), new CANNON.Quaternion().setFromEuler(0, Math.PI / 2, 0)); // Left
-createWall(new CANNON.Vec3(5, 0, 0), new CANNON.Quaternion().setFromEuler(0, -Math.PI / 2, 0)); // Right
+createWall(new CANNON.Vec3(0, 0, -5), new CANNON.Quaternion().setFromEuler(0, 0, 0));
+createWall(new CANNON.Vec3(0, 0, 5), new CANNON.Quaternion().setFromEuler(0, Math.PI, 0));
+createWall(new CANNON.Vec3(-5, 0, 0), new CANNON.Quaternion().setFromEuler(0, Math.PI / 2, 0));
+createWall(new CANNON.Vec3(5, 0, 0), new CANNON.Quaternion().setFromEuler(0, -Math.PI / 2, 0));
 
-// Dice
+// --- Dice ---
+const dieMaterial = new CANNON.Material('dieMaterial');
 const dieBody = new CANNON.Body({
     mass: 1,
     shape: new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5)),
@@ -89,39 +107,63 @@ function createDiceTexture(num) {
     return new THREE.CanvasTexture(canvas);
 }
 
-const textures = [
-    createDiceTexture(1),
-    createDiceTexture(6),
-    createDiceTexture(2),
-    createDiceTexture(5),
-    createDiceTexture(3),
-    createDiceTexture(4),
-];
-
 const dieMesh = new THREE.Mesh(
     new THREE.BoxGeometry(1, 1, 1),
-    textures.map(t => new THREE.MeshStandardMaterial({ map: t }))
+    [1, 6, 2, 5, 3, 4].map(num => new THREE.MeshStandardMaterial({ map: createDiceTexture(num) }))
 );
 scene.add(dieMesh);
 
-// UI Elements
-const messageEl = document.getElementById('message');
-const resultEl = document.getElementById('result');
-const historyListEl = document.getElementById('history-list');
+// --- Contact Materials ---
+const groundDieContactMaterial = new CANNON.ContactMaterial(groundMaterial, dieMaterial, { friction: 0.1, restitution: 0.5 });
+world.addContactMaterial(groundDieContactMaterial);
+const dieWallContactMaterial = new CANNON.ContactMaterial(dieMaterial, wallMaterial, { friction: 0.01, restitution: 0.8 });
+world.addContactMaterial(dieWallContactMaterial);
 
+// --- UI ---
+const messageEl = document.createElement('div');
+messageEl.id = 'message';
+messageEl.innerText = 'Tap to roll';
+document.body.appendChild(messageEl);
+
+const groundFolder = gui.addFolder('Ground');
+groundFolder.add(params, 'textureSize', 2, 32, 1).name('Texture Size').onChange(updateGroundTexture);
+groundFolder.addColor(params, 'color1').name('Color 1').onChange(updateGroundTexture);
+groundFolder.addColor(params, 'color2').name('Color 2').onChange(updateGroundTexture);
+
+const diceFolder = gui.addFolder('Dice');
+diceFolder.add(params, 'rotationSpeed', 0.1, 5, 0.1).name('Rotation Speed');
+
+const resultFolder = gui.addFolder('Result');
+resultFolder.add(params, 'rollResult').name('Last Roll').listen();
+resultFolder.add(params, 'roll').name('Roll Again');
+
+function updateGroundTexture() {
+    groundTexture.dispose(); // Dispose old texture
+    groundTexture = createCheckerboardTexture(params.textureSize, params.color1, params.color2);
+    groundTexture.wrapS = THREE.RepeatWrapping;
+    groundTexture.wrapT = THREE.RepeatWrapping;
+    groundTexture.repeat.set(50, 50);
+    groundMesh.material.map = groundTexture;
+    groundMesh.material.needsUpdate = true;
+}
+
+// --- Game Logic ---
 let isRolling = false;
 
 function rollDice() {
     if (isRolling) return;
     isRolling = true;
     messageEl.innerText = 'Rolling...';
-    resultEl.innerText = '';
 
     dieBody.position.set(0, 2, 0);
     dieBody.quaternion.setFromEuler(Math.random() * Math.PI * 2, Math.random() * Math.PI * 2, Math.random() * Math.PI * 2);
 
     const force = new CANNON.Vec3(Math.random() * 20 - 10, 5, Math.random() * 20 - 10);
-    const torque = new CANNON.Vec3(Math.random() * 20 - 10, Math.random() * 20 - 10, Math.random() * 20 - 10);
+    const torque = new CANNON.Vec3(
+        (Math.random() - 0.5) * 20 * params.rotationSpeed,
+        (Math.random() - 0.5) * 20 * params.rotationSpeed,
+        (Math.random() - 0.5) * 20 * params.rotationSpeed
+    );
     dieBody.applyImpulse(force, dieBody.position);
     dieBody.applyTorque(torque);
 }
@@ -130,10 +172,10 @@ window.addEventListener('click', rollDice);
 
 function getDiceFace() {
     const up = new THREE.Vector3(0, 1, 0);
-    let closestFace;
+    let closestFace = 0;
     let maxDot = -1;
 
-    const faces = [
+    const faceNormals = [
         { value: 1, normal: new THREE.Vector3(0, 0, 1) },
         { value: 6, normal: new THREE.Vector3(0, 0, -1) },
         { value: 2, normal: new THREE.Vector3(0, 1, 0) },
@@ -142,14 +184,14 @@ function getDiceFace() {
         { value: 4, normal: new THREE.Vector3(-1, 0, 0) },
     ];
 
-    faces.forEach(face => {
+    for (const face of faceNormals) {
         const worldNormal = face.normal.clone().applyQuaternion(dieMesh.quaternion);
         const dot = worldNormal.dot(up);
         if (dot > maxDot) {
             maxDot = dot;
             closestFace = face.value;
         }
-    });
+    }
     return closestFace;
 }
 
@@ -161,7 +203,6 @@ function animate() {
     dieMesh.position.copy(dieBody.position);
     dieMesh.quaternion.copy(dieBody.quaternion);
 
-    // Camera follow
     const targetPosition = dieMesh.position.clone().add(new THREE.Vector3(0, 5, 5));
     camera.position.lerp(targetPosition, 0.05);
     camera.lookAt(dieMesh.position);
@@ -171,18 +212,15 @@ function animate() {
         if (dieBody.velocity.length() < sleepSpeed && dieBody.angularVelocity.length() < sleepSpeed) {
             isRolling = false;
             const result = getDiceFace();
-            resultEl.innerText = result;
+            params.rollResult = result;
             messageEl.innerText = 'Tap to roll again';
-            
-            const li = document.createElement('li');
-            li.innerText = `You rolled a ${result}`;
-            historyListEl.prepend(li);
         }
     }
 
     renderer.render(scene, camera);
 }
 
+rollDice(); // Initial roll
 animate();
 
 window.addEventListener('resize', () => {
