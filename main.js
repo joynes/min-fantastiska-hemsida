@@ -22,7 +22,7 @@ const params = {
     color1: '#444444',
     color2: '#888888',
     rotationSpeed: 1,
-    throwForce: 1,
+    throwForce: 3,
     rollResult: 'N/A',
     roll: () => rollDice(),
 };
