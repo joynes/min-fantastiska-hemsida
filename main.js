@@ -27,6 +27,20 @@ const params = {
     roll: () => rollDice(),
 };
 
+function saveParams() {
+    localStorage.setItem('diceRollParams', JSON.stringify(params));
+}
+
+function loadParams() {
+    const savedParams = localStorage.getItem('diceRollParams');
+    if (savedParams) {
+        const loaded = JSON.parse(savedParams);
+        Object.assign(params, loaded);
+    }
+}
+
+loadParams(); // Load parameters on startup
+
 const gui = new lil.GUI();
 
 // --- Ground ---
@@ -127,13 +141,13 @@ messageEl.innerText = 'Tap to roll';
 document.body.appendChild(messageEl);
 
 const groundFolder = gui.addFolder('Ground');
-groundFolder.add(params, 'squareSize', 8, 256, 1).name('Square Size').onChange(updateGroundTexture);
-groundFolder.addColor(params, 'color1').name('Color 1').onChange(updateGroundTexture);
-groundFolder.addColor(params, 'color2').name('Color 2').onChange(updateGroundTexture);
+groundFolder.add(params, 'squareSize', 8, 256, 1).name('Square Size').onChange(() => { updateGroundTexture(); saveParams(); });
+groundFolder.addColor(params, 'color1').name('Color 1').onChange(() => { updateGroundTexture(); saveParams(); });
+groundFolder.addColor(params, 'color2').name('Color 2').onChange(() => { updateGroundTexture(); saveParams(); });
 
 const diceFolder = gui.addFolder('Dice');
-diceFolder.add(params, 'rotationSpeed', 0.01, 5, 0.01).name('Rotation Speed');
-diceFolder.add(params, 'throwForce', 0.1, 10, 0.1).name('Throw Force');
+diceFolder.add(params, 'rotationSpeed', 0.01, 5, 0.01).name('Rotation Speed').onChange(saveParams);
+diceFolder.add(params, 'throwForce', 0.1, 10, 0.1).name('Throw Force').onChange(saveParams);
 
 const resultFolder = gui.addFolder('Result');
 resultFolder.add(params, 'rollResult').name('Last Roll').listen();
