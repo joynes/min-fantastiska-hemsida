@@ -22,6 +22,7 @@ const params = {
     color1: '#444444',
     color2: '#888888',
     rotationSpeed: 1,
+    throwForce: 1,
     rollResult: 'N/A',
     roll: () => rollDice(),
 };
@@ -87,7 +88,8 @@ const dieMaterial = new CANNON.Material('dieMaterial');
 const dieBody = new CANNON.Body({
     mass: 1,
     shape: new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5)),
-    material: dieMaterial
+    material: dieMaterial,
+    angularDamping: 0.8
 });
 world.addBody(dieBody);
 
@@ -113,9 +115,9 @@ const dieMesh = new THREE.Mesh(
 scene.add(dieMesh);
 
 // --- Contact Materials ---
-const groundDieContactMaterial = new CANNON.ContactMaterial(groundMaterial, dieMaterial, { friction: 0.1, restitution: 0.5 });
+const groundDieContactMaterial = new CANNON.ContactMaterial(groundMaterial, dieMaterial, { friction: 0.5, restitution: 0.2 });
 world.addContactMaterial(groundDieContactMaterial);
-const dieWallContactMaterial = new CANNON.ContactMaterial(dieMaterial, wallMaterial, { friction: 0.01, restitution: 0.8 });
+const dieWallContactMaterial = new CANNON.ContactMaterial(dieMaterial, wallMaterial, { friction: 0.01, restitution: 0.5 });
 world.addContactMaterial(dieWallContactMaterial);
 
 // --- UI ---
@@ -131,6 +133,7 @@ groundFolder.addColor(params, 'color2').name('Color 2').onChange(updateGroundTex
 
 const diceFolder = gui.addFolder('Dice');
 diceFolder.add(params, 'rotationSpeed', 0.01, 5, 0.01).name('Rotation Speed');
+diceFolder.add(params, 'throwForce', 0.1, 10, 0.1).name('Throw Force');
 
 const resultFolder = gui.addFolder('Result');
 resultFolder.add(params, 'rollResult').name('Last Roll').listen();
@@ -157,11 +160,15 @@ function rollDice() {
     dieBody.position.set(0, 2, 0);
     dieBody.quaternion.setFromEuler(Math.random() * Math.PI * 2, Math.random() * Math.PI * 2, Math.random() * Math.PI * 2);
 
-    const force = new CANNON.Vec3(Math.random() * 20 - 10, 5, Math.random() * 20 - 10);
+    const force = new CANNON.Vec3(
+        (Math.random() * 2 - 1) * params.throwForce,
+        params.throwForce,
+        (Math.random() * 2 - 1) * params.throwForce
+    );
     const torque = new CANNON.Vec3(
-        (Math.random() - 0.5) * 20 * params.rotationSpeed,
-        (Math.random() - 0.5) * 20 * params.rotationSpeed,
-        (Math.random() - 0.5) * 20 * params.rotationSpeed
+        (Math.random() - 0.5) * 5 * params.rotationSpeed,
+        (Math.random() - 0.5) * 5 * params.rotationSpeed,
+        (Math.random() - 0.5) * 5 * params.rotationSpeed
     );
     dieBody.applyImpulse(force, dieBody.position);
     dieBody.applyTorque(torque);
