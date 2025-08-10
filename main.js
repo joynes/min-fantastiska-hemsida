@@ -18,7 +18,7 @@ world.gravity.set(0, -9.82, 0);
 
 // --- Parameters and GUI ---
 const params = {
-    textureSize: 8,
+    squareSize: 128,
     color1: '#444444',
     color2: '#888888',
     rotationSpeed: 1,
@@ -29,13 +29,12 @@ const params = {
 const gui = new lil.GUI();
 
 // --- Ground ---
-function createCheckerboardTexture(size, color1, color2) {
+function createCheckerboardTexture(squareSize, color1, color2) {
     const canvas = document.createElement('canvas');
-    const divisions = size;
     canvas.width = 256;
     canvas.height = 256;
     const context = canvas.getContext('2d');
-    const squareSize = canvas.width / divisions;
+    const divisions = canvas.width / squareSize;
     for (let x = 0; x < divisions; x++) {
         for (let y = 0; y < divisions; y++) {
             context.fillStyle = (x + y) % 2 === 0 ? color1 : color2;
@@ -45,10 +44,10 @@ function createCheckerboardTexture(size, color1, color2) {
     return new THREE.CanvasTexture(canvas);
 }
 
-let groundTexture = createCheckerboardTexture(params.textureSize, params.color1, params.color2);
+let groundTexture = createCheckerboardTexture(params.squareSize, params.color1, params.color2);
 groundTexture.wrapS = THREE.RepeatWrapping;
 groundTexture.wrapT = THREE.RepeatWrapping;
-groundTexture.repeat.set(50, 50);
+groundTexture.repeat.set(25, 25);
 
 const groundMaterial = new CANNON.Material('groundMaterial');
 const groundMesh = new THREE.Mesh(
@@ -126,12 +125,12 @@ messageEl.innerText = 'Tap to roll';
 document.body.appendChild(messageEl);
 
 const groundFolder = gui.addFolder('Ground');
-groundFolder.add(params, 'textureSize', 2, 32, 1).name('Texture Size').onChange(updateGroundTexture);
+groundFolder.add(params, 'squareSize', 8, 256, 1).name('Square Size').onChange(updateGroundTexture);
 groundFolder.addColor(params, 'color1').name('Color 1').onChange(updateGroundTexture);
 groundFolder.addColor(params, 'color2').name('Color 2').onChange(updateGroundTexture);
 
 const diceFolder = gui.addFolder('Dice');
-diceFolder.add(params, 'rotationSpeed', 0.1, 5, 0.1).name('Rotation Speed');
+diceFolder.add(params, 'rotationSpeed', 0.01, 5, 0.01).name('Rotation Speed');
 
 const resultFolder = gui.addFolder('Result');
 resultFolder.add(params, 'rollResult').name('Last Roll').listen();
@@ -139,10 +138,10 @@ resultFolder.add(params, 'roll').name('Roll Again');
 
 function updateGroundTexture() {
     groundTexture.dispose(); // Dispose old texture
-    groundTexture = createCheckerboardTexture(params.textureSize, params.color1, params.color2);
+    groundTexture = createCheckerboardTexture(params.squareSize, params.color1, params.color2);
     groundTexture.wrapS = THREE.RepeatWrapping;
     groundTexture.wrapT = THREE.RepeatWrapping;
-    groundTexture.repeat.set(50, 50);
+    groundTexture.repeat.set(25, 25);
     groundMesh.material.map = groundTexture;
     groundMesh.material.needsUpdate = true;
 }
