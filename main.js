@@ -12,41 +12,29 @@ const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
 directionalLight.position.set(2, 5, 5);
 scene.add(directionalLight);
 
-camera.position.set(0, 10, 10);
-camera.lookAt(0, 0, 0);
-
-// Invisible Walls
-const wallMaterial = new CANNON.Material('wallMaterial');
-const wallContactMaterial = new CANNON.ContactMaterial(dieMaterial, wallMaterial, {
-    friction: 0.01,
-    restitution: 0.8
-});
-world.addContactMaterial(wallContactMaterial);
-
-function createWall(position, quaternion) {
-    const wallBody = new CANNON.Body({
-        mass: 0,
-        shape: new CANNON.Plane(),
-        material: wallMaterial,
-        position: position,
-        quaternion: quaternion
-    });
-    world.addBody(wallBody);
-}
-
-// Floor is at y=0
-createWall(new CANNON.Vec3(0, 0, -5), new CANNON.Quaternion().setFromEuler(0, 0, 0)); // Back wall
-createWall(new CANNON.Vec3(0, 0, 5), new CANNON.Quaternion().setFromEuler(0, Math.PI, 0)); // Front wall
-createWall(new CANNON.Vec3(-5, 0, 0), new CANNON.Quaternion().setFromEuler(0, Math.PI / 2, 0)); // Left wall
-createWall(new CANNON.Vec3(5, 0, 0), new CANNON.Quaternion().setFromEuler(0, -Math.PI / 2, 0)); // Right wall
-
-
 // Physics
 const world = new CANNON.World();
 world.gravity.set(0, -9.82, 0);
 
-// Ground
+// Materials
 const groundMaterial = new CANNON.Material('groundMaterial');
+const dieMaterial = new CANNON.Material('dieMaterial');
+const wallMaterial = new CANNON.Material('wallMaterial');
+
+// Contact Materials
+const groundDieContactMaterial = new CANNON.ContactMaterial(groundMaterial, dieMaterial, {
+    friction: 0.1,
+    restitution: 0.5
+});
+world.addContactMaterial(groundDieContactMaterial);
+
+const dieWallContactMaterial = new CANNON.ContactMaterial(dieMaterial, wallMaterial, {
+    friction: 0.01,
+    restitution: 0.8
+});
+world.addContactMaterial(dieWallContactMaterial);
+
+// Ground
 const groundBody = new CANNON.Body({
     mass: 0,
     shape: new CANNON.Plane(),
@@ -62,20 +50,29 @@ const groundMesh = new THREE.Mesh(
 groundMesh.rotation.x = -Math.PI / 2;
 scene.add(groundMesh);
 
+// Walls
+function createWall(position, quaternion) {
+    const wallBody = new CANNON.Body({
+        mass: 0,
+        shape: new CANNON.Plane(),
+        material: wallMaterial,
+        position: position,
+        quaternion: quaternion
+    });
+    world.addBody(wallBody);
+}
+createWall(new CANNON.Vec3(0, 0, -5), new CANNON.Quaternion().setFromEuler(0, 0, 0)); // Back
+createWall(new CANNON.Vec3(0, 0, 5), new CANNON.Quaternion().setFromEuler(0, Math.PI, 0)); // Front
+createWall(new CANNON.Vec3(-5, 0, 0), new CANNON.Quaternion().setFromEuler(0, Math.PI / 2, 0)); // Left
+createWall(new CANNON.Vec3(5, 0, 0), new CANNON.Quaternion().setFromEuler(0, -Math.PI / 2, 0)); // Right
+
 // Dice
-const dieMaterial = new CANNON.Material('dieMaterial');
 const dieBody = new CANNON.Body({
     mass: 1,
     shape: new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5)),
     material: dieMaterial
 });
 world.addBody(dieBody);
-
-const contactMaterial = new CANNON.ContactMaterial(groundMaterial, dieMaterial, {
-    friction: 0.1,
-    restitution: 0.5
-});
-world.addContactMaterial(contactMaterial);
 
 function createDiceTexture(num) {
     const canvas = document.createElement('canvas');
